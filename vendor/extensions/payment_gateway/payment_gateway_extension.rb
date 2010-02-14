@@ -1,6 +1,3 @@
-# Uncomment this if you reference any of your controllers in activate
-require_dependency 'application'
-
 class PaymentGatewayExtension < Spree::Extension
   version "1.0"
   description "Provides basic payment gateway functionality.  User specifies an ActiveMerchant compatible gateway 
@@ -13,6 +10,26 @@ class PaymentGatewayExtension < Spree::Extension
     Creditcard.class_eval do
       # add gateway methods to the creditcard so we can authorize, capture, etc.
       include Spree::PaymentGateway
-    end
+    end          
+    
+    silence_warnings { require 'active_merchant/billing/authorize_net_cim' }
+    
+		#register all payment gateways
+		[
+			Gateway::Bogus,
+      Gateway::AuthorizeNet,
+			Gateway::AuthorizeNetCim,
+      Gateway::Linkpoint,
+			Gateway::PayPal,
+			Gateway::Protx,
+			Gateway::Beanstream
+    ].each{|gw|
+      begin
+        gw.register  
+      rescue Exception => e
+        $stderr.puts "Error registering gateway #{c_model}"
+      end
+    }
+
   end
 end

@@ -1,7 +1,6 @@
 class Admin::ImagesController < Admin::BaseController
   resource_controller
-  before_filter :load_data, :except => :create
-	belongs_to :variant, :product
+  before_filter :load_data
 	
 	new_action.response do |wants|
     wants.html {render :action => :new, :layout => false}
@@ -10,21 +9,14 @@ class Admin::ImagesController < Admin::BaseController
 	create.response do |wants|
 		wants.html {redirect_to admin_product_images_url(@product)}
   end
-	
-	create.before do
-		if params.has_key? :viewable_id
-			if params[:viewable_id] == "All"
-				object.viewable_type = 'Product'
-			else
-				object.viewable_type = 'Variant'
-				object.viewable_id = params[:viewable_id]
-			end
-		end
-	end
-	
-  destroy.before do 
-    @viewable = object.viewable
+
+	update.response do |wants|
+		wants.html {redirect_to admin_product_images_url(@product)}
   end
+	
+	create.before :create_before
+	update.before :update_before
+	destroy.before :destroy_before
   
   destroy.response do |wants| 
     wants.html do
@@ -33,14 +25,39 @@ class Admin::ImagesController < Admin::BaseController
   end
  
   private
+
   def load_data
 		@product = Product.find_by_permalink(params[:product_id])
 		@variants = @product.variants.collect do |variant| 
 			[variant.options_text, variant.id ]
 		end
-		
-		@variants.insert(0, "All")
+		@variants.insert(0, [I18n.t("all"), "All"])
   end
 
+  def create_before
+		if params[:image].has_key? :viewable_id
+			if params[:image][:viewable_id] == "All"
+				object.viewable_type = 'Product'
+				object.viewable_id = @product.id
+			else
+				object.viewable_type = 'Variant'
+				object.viewable_id = params[:image][:viewable_id]
+			end
+		else
+			object.viewable_type = 'Product'
+			object.viewable_id = @product.id
+		end
+	end
+	
+	def update_before
+	  if params[:image][:viewable_id] == "All"
+        object.viewable_type = 'Product'
+        object.viewable_id = @product.id
+    end
+  end
+  
+  def destroy_before 
+    @viewable = object.viewable
+  end
 
 end

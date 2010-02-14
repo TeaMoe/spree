@@ -1,14 +1,9 @@
-def yaml_to_database(fixture, path)
-  require 'active_record/fixtures'
-  ActiveRecord::Base.establish_connection(RAILS_ENV)
-  tables = Dir.new(path).entries.select{|e| e =~ /(.+)?\.yml/}.collect{|c| c.split('.').first}
-  Fixtures.create_fixtures(path, tables)
+Rake::Task["db:load_dir"].invoke( "default" ) 
+puts "Default data has been loaded"
+
+puts "Loading db/seeds.rb for each extension"
+extension_roots = Spree::ExtensionLoader.instance.load_extension_roots
+extension_roots.each do |extension_root|
+  seeds = "#{extension_root}/db/seeds.rb"
+  require seeds if File.exists? seeds
 end
-
-# load setup data from seeds
-fixture = "default"
-directory = "#{File.dirname(__FILE__)}/#{fixture}"
-
-puts "loading fixtures from #{directory}"
-yaml_to_database(fixture, directory)
-puts "done."
